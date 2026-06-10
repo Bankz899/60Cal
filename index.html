@@ -419,18 +419,18 @@
 <div class="container">
 
   <!-- TABS -->
-  <div class="tabs">
-    <button class="tab active" onclick="switchTab('A')">
+  <div class="tabs" style="grid-template-columns:1fr 1fr 1fr;">
+    <button class="tab" onclick="switchTab('A')">
       💳 ยอดบิล
       <span class="tab-sub">รัฐจ่ายเท่าไหร่?</span>
     </button>
-    <button class="tab" onclick="switchTab('B')">
+    <button class="tab active" onclick="switchTab('B')">
       🎯 สิทธิเหลือกี่บาท?
       <span class="tab-sub">ซื้อได้เท่าไหร่?</span>
     </button>
     <button class="tab" onclick="switchTab('C')">
-      📅 รายเดือน
-      <span class="tab-sub">เติมเงินเท่าไหร่?</span>
+      💰 G-Wallet
+      <span class="tab-sub">ซื้อได้เท่าไหร่?</span>
     </button>
   </div>
 
@@ -519,46 +519,86 @@
     </div>
   </div>
 
-  <!-- ===== MODE C: Monthly top-up ===== -->
+  <!-- ===== MODE C: G-Wallet balance → Max spend ===== -->
   <div id="modeC" class="card" style="display:none">
     <div>
-      <div class="section-label">สิทธิรัฐที่เหลือเดือนนี้ (บาท) — ดูจากแอปเป๋าตัง</div>
+      <div class="section-label">ยอดเงินใน G-Wallet (บาท)</div>
       <div class="input-wrapper">
         <span class="currency">฿</span>
-        <input type="number" id="monthRemainInput" placeholder="0" min="0" max="1000" step="1" oninput="calcC()" />
+        <input type="number" id="walletInput" placeholder="0" min="0" step="1" oninput="calcC()" />
       </div>
-
     </div>
 
     <div class="divider"></div>
 
     <div id="resultC_ph" class="placeholder">
+      <span class="icon">💰</span>
+      กรอกยอดเงินใน G-Wallet เพื่อดูว่าซื้อได้เท่าไหร่
+    </div>
+
+    <div id="resultC" style="display:none;flex-direction:column;gap:14px;">
+      <div>
+        <div class="section-label">ซื้อได้สูงสุดเท่านี้ เพื่อใช้สิทธิเต็ม</div>
+        <div class="highlight-box">
+          <div class="highlight-label">
+            <strong>ยอดซื้อสูงสุด</strong>
+            ใช้เงินตัวเองคุ้มที่สุด
+          </div>
+          <div class="highlight-amount" id="maxSpendC">—</div>
+        </div>
+      </div>
+      <div class="result-grid">
+        <div class="result-box gov">
+          <div class="result-label">🏛️ รัฐจ่าย</div>
+          <div class="result-amount" id="govPaysC">—<span class="result-unit">฿</span></div>
+        </div>
+        <div class="result-box you">
+          <div class="result-label">👤 ลูกค้าจ่าย</div>
+          <div class="result-amount" id="youPayC">—<span class="result-unit">฿</span></div>
+        </div>
+      </div>
+      <div class="info-box ok show" id="noteC"></div>
+    </div>
+  </div>
+
+  <!-- MONTHLY COLLAPSIBLE -->
+  <div style="text-align:center;">
+    <button onclick="toggleMonthly()" style="background:none;border:none;color:var(--muted);font-family:'Sarabun',sans-serif;font-size:13px;cursor:pointer;padding:4px 12px;text-decoration:underline;text-underline-offset:3px;">
+      📅 คำนวณรายเดือน
+    </button>
+  </div>
+
+  <div id="monthlyPanel" style="display:none;" class="card">
+    <div>
+      <div class="section-label">สิทธิรัฐที่เหลือเดือนนี้ (บาท)</div>
+      <div class="input-wrapper">
+        <span class="currency">฿</span>
+        <input type="number" id="monthRemainInput" placeholder="0" min="0" max="1000" step="1" oninput="calcM()" />
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div id="resultM_ph" class="placeholder">
       <span class="icon">📅</span>
       กรอกสิทธิรัฐที่เหลือในเดือนนี้
     </div>
-
-    <div id="resultC" style="display:none;flex-direction:column;gap:10px;">
+    <div id="resultM" style="display:none;flex-direction:column;gap:10px;">
       <div class="section-label">สรุปยอดเดือนนี้</div>
-
       <div class="monthly-row">
         <span class="monthly-row-label">🏛️ รัฐจ่ายให้สูงสุด</span>
-        <span class="monthly-row-val gov-color" id="cGovMax">—</span>
+        <span class="monthly-row-val gov-color" id="mGovMax">—</span>
       </div>
-
       <div class="monthly-row">
         <span class="monthly-row-label">💰 ยอดซื้อรวมสูงสุดที่คุ้ม</span>
-        <span class="monthly-row-val total-color" id="cTotalMax">—</span>
+        <span class="monthly-row-val total-color" id="mTotalMax">—</span>
       </div>
-
       <div class="highlight-box" style="margin-top:4px;">
         <div class="highlight-label">
           <strong>ต้องเติม G-Wallet</strong>
           เพื่อซื้อให้ครบวงเงิน (ส่วน 40%)
         </div>
-        <div class="highlight-amount" id="cTopUp">—</div>
+        <div class="highlight-amount" id="mTopUp">—</div>
       </div>
-
-      <div class="info-box info show" id="cNote"></div>
+      <div class="info-box info show" id="mNote"></div>
     </div>
   </div>
 
@@ -579,15 +619,16 @@
     });
   }
 
+  function toggleMonthly() {
+    const panel = document.getElementById('monthlyPanel');
+    panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+  }
+
   function fmt(n) {
     return n.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
-  function setA(v) { document.getElementById('billInput').value = v; calcA(); }
-  function setB(v) { document.getElementById('remainInput').value = v; calcB(); }
-  function setC(v) { document.getElementById('monthRemainInput').value = v; calcC(); }
-
-  // MODE A
+  // MODE A: Bill → Split
   function calcA() {
     const bill = parseFloat(document.getElementById('billInput').value) || 0;
     const ph = document.getElementById('resultA_ph');
@@ -604,12 +645,10 @@
     document.getElementById('barA').style.width = Math.min(pct,100) + '%';
     document.getElementById('barLeft').textContent = `รัฐ ${fmt(govPays)} ฿`;
     document.getElementById('barRight').textContent = `${Math.round(pct)}% ของวงเงินวัน`;
-
-    const warn = document.getElementById('warnA');
-    warn.classList.toggle('show', bill > 333.34);
+    document.getElementById('warnA').classList.toggle('show', bill > 333.34);
   }
 
-  // MODE B
+  // MODE B: Gov subsidy remaining → Max spend
   function calcB() {
     const remain = parseFloat(document.getElementById('remainInput').value) || 0;
     const ph = document.getElementById('resultB_ph');
@@ -626,37 +665,64 @@
     document.getElementById('youPayB').innerHTML = fmt(youPay) + '<span class="result-unit"> ฿</span>';
 
     const note = document.getElementById('noteB');
-    if (remain >= 200) {
-      note.textContent = '✅ สิทธิเต็ม 200 ฿ — ซื้อได้สูงสุด 333.33 ฿ คุ้มที่สุด';
+    note.textContent = remain >= 200
+      ? '✅ สิทธิเต็ม 200 ฿ — ซื้อได้สูงสุด 333.33 ฿ คุ้มที่สุด'
+      : `💡 สิทธิเหลือ ${fmt(capped)} ฿ — ซื้อได้สูงสุด ${fmt(maxBill)} ฿`;
+  }
+
+  // MODE C: G-Wallet balance → Max spend
+  function calcC() {
+    const wallet = parseFloat(document.getElementById('walletInput').value) || 0;
+    const ph = document.getElementById('resultC_ph');
+    const res = document.getElementById('resultC');
+    if (wallet <= 0) { ph.style.display='block'; res.style.display='none'; return; }
+    ph.style.display = 'none'; res.style.display = 'flex';
+
+    // wallet = 40% of max bill, but gov subsidy capped at 200
+    // max bill without hitting gov cap = 200 / 0.6 = 333.33
+    // customer's share of that = 333.33 * 0.4 = 133.33
+    // if wallet > 133.33, they can spend 333.33 but gov is capped — extra comes from their own pocket
+    const maxBill = wallet / 0.4;
+    const govPays = Math.min(maxBill * 0.6, 200);
+    const actualMax = govPays / 0.6; // true max where gov subsidy is fully used
+    const youPay = actualMax * 0.4;
+
+    // if wallet covers more than the optimal 40%, cap at optimal
+    const optimalWallet = 200 / 0.6 * 0.4; // = 133.33
+    const displayMax = wallet >= optimalWallet ? 200 / 0.6 : maxBill;
+    const displayGov = Math.min(displayMax * 0.6, 200);
+    const displayYou = displayMax - displayGov;
+
+    document.getElementById('maxSpendC').textContent = fmt(displayMax) + ' ฿';
+    document.getElementById('govPaysC').innerHTML = fmt(displayGov) + '<span class="result-unit"> ฿</span>';
+    document.getElementById('youPayC').innerHTML = fmt(displayYou) + '<span class="result-unit"> ฿</span>';
+
+    const note = document.getElementById('noteC');
+    if (wallet >= optimalWallet) {
+      note.textContent = `✅ ยอดใน G-Wallet เพียงพอ — ซื้อได้สูงสุด 333.33 ฿ ใช้สิทธิรัฐเต็ม 200 ฿`;
     } else {
-      note.textContent = `💡 สิทธิเหลือ ${fmt(capped)} ฿ — ซื้อได้สูงสุด ${fmt(maxBill)} ฿`;
+      note.textContent = `💡 G-Wallet ${fmt(wallet)} ฿ — ซื้อได้สูงสุด ${fmt(displayMax)} ฿ รัฐช่วย ${fmt(displayGov)} ฿`;
     }
   }
 
-  // MODE C
-  function calcC() {
+  // MONTHLY
+  function calcM() {
     const remain = parseFloat(document.getElementById('monthRemainInput').value) || 0;
-    const ph = document.getElementById('resultC_ph');
-    const res = document.getElementById('resultC');
+    const ph = document.getElementById('resultM_ph');
+    const res = document.getElementById('resultM');
     if (remain <= 0) { ph.style.display='block'; res.style.display='none'; return; }
     ph.style.display = 'none'; res.style.display = 'flex';
 
-    // Gov will pay "remain" baht max this month
-    // To use all of it: total bill = remain / 0.6, topup = total * 0.4
     const govMax = Math.min(remain, 1000);
     const totalMax = govMax / 0.6;
     const topUp = totalMax * 0.4;
 
-    document.getElementById('cGovMax').textContent = fmt(govMax) + ' ฿';
-    document.getElementById('cTotalMax').textContent = fmt(totalMax) + ' ฿';
-    document.getElementById('cTopUp').textContent = fmt(topUp) + ' ฿';
-
-    const note = document.getElementById('cNote');
-    if (remain >= 1000) {
-      note.textContent = `💡 สิทธิเต็ม 1,000 ฿ — เติม G-Wallet ${fmt(topUp)} ฿ เพื่อซื้อของรวม ${fmt(totalMax)} ฿ ใช้สิทธิได้เต็มเดือน`;
-    } else {
-      note.textContent = `💡 สิทธิเหลือ ${fmt(govMax)} ฿ — เติม ${fmt(topUp)} ฿ เพื่อซื้อของรวม ${fmt(totalMax)} ฿ ได้คุ้มที่สุด`;
-    }
+    document.getElementById('mGovMax').textContent = fmt(govMax) + ' ฿';
+    document.getElementById('mTotalMax').textContent = fmt(totalMax) + ' ฿';
+    document.getElementById('mTopUp').textContent = fmt(topUp) + ' ฿';
+    document.getElementById('mNote').textContent = remain >= 1000
+      ? `💡 สิทธิเต็ม 1,000 ฿ — เติม ${fmt(topUp)} ฿ เพื่อซื้อรวม ${fmt(totalMax)} ฿`
+      : `💡 สิทธิเหลือ ${fmt(govMax)} ฿ — เติม ${fmt(topUp)} ฿ เพื่อซื้อรวม ${fmt(totalMax)} ฿`;
   }
 
   switchTab('B');
